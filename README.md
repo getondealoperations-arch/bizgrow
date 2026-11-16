@@ -1,36 +1,33 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Bizgrow Solutions – website + lead CRM
 
-## Getting Started
+Next.js 16 (App Router) · PostgreSQL (`pg`, plain SQL) · jose/bcrypt auth · Zod · Nodemailer · Tailwind v4.
+Chosen over a headless CMS/ORM to keep the stack small: one DB, one deployable app, no extra services.
 
-First, run the development server:
-
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## Run
 ```
+cp .env.example .env.local   # fill DATABASE_URL, SESSION_SECRET (32+ chars)
+createdb bizgrow && npm run seed   # schema + first admin (password printed once)
+npm run dev                         # or: npm run build && npm start
+```
+Admin: `/admin` (noindex, excluded from robots/sitemap). Change the seeded password after first login (create a new admin, deactivate the seed one).
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Roles
+- **admin** – everything, creates/deactivates employees. **manager** – all leads, assign, content, team performance. **employee** – only leads assigned to them (enforced in SQL in `lib/admin.ts` and in every server action).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Database (`db/schema.sql`)
+`users` (role, active) · `leads` (one row per form submission; `form_type`, status pipeline, `assigned_to`, `follow_up_at`, `utm`, `consent_at`) · `lead_events` (history: created/note/status/assign/follow_up) · `cms_items` (kind = post|testimonial|case_study|faq|banner|seo|setting; `published` + `publish_at` = scheduling).
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Content & placeholders
+Brand, services, industries: `lib/content.ts`. Contact details, social links, map, analytics IDs: env vars (`.env.example`); the site shows `[… – to be added]` until set. Not supplied and therefore placeholders: hex colours (tokens in `globals.css`), founder profile, Privacy/Terms text, testimonials/case studies/articles. Testimonials and case studies cannot be published without a “verified by” note.
 
-## Learn More
+## Integrations
+GA4 / Meta Pixel / Google Ads load only after cookie consent. reCAPTCHA v3 active when both keys set (honeypot, timing check and rate limit always on). SMTP: set `SMTP_URL`, `MAIL_FROM`, `LEAD_NOTIFY_TO` → internal notification + acknowledgement to the lead. WhatsApp: floating button + per-service click-to-chat with pre-filled text (appears once `NEXT_PUBLIC_WHATSAPP` is set). Automated WhatsApp acknowledgement needs WhatsApp Business Cloud API templates – not wired. External CRM sync (Phase 4) not built; CSV export covers it for now.
 
-To learn more about Next.js, take a look at the following resources:
+## Backup & recovery
+`pg_dump -Fc "$DATABASE_URL" > bizgrow-$(date +%F).dump` daily (cron / managed-DB snapshots). Restore: `createdb bizgrow_new && pg_restore -d bizgrow_new bizgrow-YYYY-MM-DD.dump`, then point `DATABASE_URL` at it. Test a restore before launch.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Deploy
+Any Node host + managed Postgres (e.g. Vercel + Neon). Set all env vars, run `npm run migrate` against the prod DB, set `SITE_URL`, serve over HTTPS (cookie is `secure` in production). Note: rate limiting is in-memory per instance.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Pre-launch QA checklist
+Submit each of the 4 forms; confirm lead row, email, and assignment; log in as employee and confirm scope; CSV opens in Excel; Lighthouse on `/` and a service page; `/sitemap.xml` and `/robots.txt`; accept/decline cookie banner and check GA/Pixel only fire after accept; backup + restore drill.
