@@ -3,7 +3,7 @@ import { pool, one } from "../lib/db.ts";
 import bcrypt from "bcryptjs";
 import { randomBytes } from "node:crypto";
 
-await pool.query(readFileSync("db/schema.sql", "utf8"));
+for (const stmt of readFileSync("db/schema.sql", "utf8").split(";")) if (stmt.replace(/--.*$/gm, "").trim()) await pool.query(stmt);
 console.log("schema ok");
 
 if (process.argv.includes("--seed")) {

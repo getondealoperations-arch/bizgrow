@@ -12,7 +12,7 @@ export default async function Leads({ searchParams }: PageProps<"/admin/leads">)
   const f: LeadQuery = Object.fromEntries(Object.entries(sp).map(([k, v]) => [k, String(Array.isArray(v) ? v[0] : v ?? "")]));
   const { where, params } = leadWhere(u, f);
   const [rows, sources, staff] = await Promise.all([
-    q<Record<string, string>>(`SELECT l.id,l.name,l.company,l.phone,l.status,l.industry,l.source,l.services,l.form_type,to_char(l.created_at,'YYYY-MM-DD') d, to_char(l.follow_up_at,'YYYY-MM-DD') fu, u.name owner
+    q<Record<string, string>>(`SELECT l.id,l.name,l.company,l.phone,l.status,l.industry,l.source,l.services,l.form_type,DATE_FORMAT(l.created_at,'%Y-%m-%d') d, DATE_FORMAT(l.follow_up_at,'%Y-%m-%d') fu, u.name owner
       FROM leads l LEFT JOIN users u ON u.id=l.assigned_to ${where} ORDER BY l.created_at DESC LIMIT 200`, params),
     q<{ source: string }>("SELECT DISTINCT source FROM leads ORDER BY 1"),
     canManage(u) ? q<{ id: number; name: string }>("SELECT id,name FROM users WHERE active ORDER BY name") : Promise.resolve([]),

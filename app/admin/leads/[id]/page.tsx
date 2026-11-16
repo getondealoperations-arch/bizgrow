@@ -10,10 +10,10 @@ export default async function Lead({ params }: PageProps<"/admin/leads/[id]">) {
   const u = await requireUser();
   const id = Number((await params).id);
   if (!Number.isInteger(id)) notFound();
-  const l = await one<Record<string, unknown>>("SELECT *, to_char(follow_up_at,'YYYY-MM-DD') fu FROM leads WHERE id=$1", [id]);
+  const l = await one<Record<string, unknown>>("SELECT *, DATE_FORMAT(follow_up_at,'%Y-%m-%d') fu FROM leads WHERE id=$1", [id]);
   if (!l || (u.role === "employee" && l.assigned_to !== u.id)) notFound();
   const [events, staff] = await Promise.all([
-    q<{ kind: string; body: string; at: string; who: string | null }>("SELECT e.kind, e.body, to_char(e.created_at,'YYYY-MM-DD HH24:MI') at, u.name who FROM lead_events e LEFT JOIN users u ON u.id=e.user_id WHERE lead_id=$1 ORDER BY e.created_at DESC, e.id DESC", [id]),
+    q<{ kind: string; body: string; at: string; who: string | null }>("SELECT e.kind, e.body, DATE_FORMAT(e.created_at,'%Y-%m-%d %H:%i') at, u.name who FROM lead_events e LEFT JOIN users u ON u.id=e.user_id WHERE lead_id=$1 ORDER BY e.created_at DESC, e.id DESC", [id]),
     canManage(u) ? q<{ id: number; name: string }>("SELECT id,name FROM users WHERE active ORDER BY name") : Promise.resolve([]),
   ]);
   const fields: [string, unknown][] = [["Form", l.form_type], ["Company", l.company], ["Phone", l.phone], ["WhatsApp", l.whatsapp], ["Email", l.email], ["Industry", l.industry], ["Location", l.location], ["Website", l.website],

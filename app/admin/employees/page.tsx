@@ -8,13 +8,13 @@ export default async function Employees({ searchParams }: PageProps<"/admin/empl
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const rows = await q<Record<string, any>>(`
     SELECT u.id, u.name, u.email, u.role, u.active,
-      count(l.id)::int assigned,
-      count(*) FILTER (WHERE l.status <> 'new')::int worked,
-      count(*) FILTER (WHERE l.status IN ('qualified','meeting','proposal','negotiation'))::int active_pipeline,
-      count(*) FILTER (WHERE l.status = 'won')::int won,
-      count(*) FILTER (WHERE l.status = 'lost')::int lost,
-      count(*) FILTER (WHERE l.follow_up_at IS NOT NULL AND l.follow_up_at < current_date AND l.status NOT IN ('won','lost'))::int overdue,
-      count(*) FILTER (WHERE l.follow_up_at = current_date AND l.status NOT IN ('won','lost'))::int due_today
+      count(l.id) assigned,
+      count(CASE WHEN l.status <> 'new' THEN 1 END) worked,
+      count(CASE WHEN l.status IN ('qualified','meeting','proposal','negotiation') THEN 1 END) active_pipeline,
+      count(CASE WHEN l.status = 'won' THEN 1 END) won,
+      count(CASE WHEN l.status = 'lost' THEN 1 END) lost,
+      count(CASE WHEN l.follow_up_at IS NOT NULL AND l.follow_up_at < CURDATE() AND l.status NOT IN ('won','lost') THEN 1 END) overdue,
+      count(CASE WHEN l.follow_up_at = CURDATE() AND l.status NOT IN ('won','lost') THEN 1 END) due_today
     FROM users u LEFT JOIN leads l ON l.assigned_to = u.id GROUP BY u.id ORDER BY u.name`);
   const isAdmin = u.role === "admin";
   return (

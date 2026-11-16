@@ -23,10 +23,15 @@ export default async function Dashboard() {
   const u = await requireUser();
   const { where, params } = leadWhere(u, {});
   const [byStatus, byService, byIndustry, monthly] = await Promise.all([
-    q<{ k: string; n: number }>(`SELECT status k, count(*)::int n FROM leads l ${where} GROUP BY 1`, params),
-    q<{ k: string; n: number }>(`SELECT s k, count(*)::int n FROM leads l, unnest(l.services) s ${where} GROUP BY 1 ORDER BY 2 DESC`, params),
-    q<{ k: string; n: number }>(`SELECT industry k, count(*)::int n FROM leads l ${where ? where + " AND" : "WHERE"} industry IS NOT NULL GROUP BY 1 ORDER BY 2 DESC`, params),
-    q<{ k: string; n: number }>(`SELECT to_char(date_trunc('month', created_at),'YYYY-MM') k, count(*)::int n FROM leads l ${where ? where + " AND" : "WHERE"} created_at > now() - interval '12 months' GROUP BY 1 ORDER BY 1`, params),
+    q<{ k: string; n: number }>(`SELECT status k, count(*) n FROM leads l ${where} GROUP BY 1`, params),
+    // services is a JSON array per lead → tally in JS (portable across MySQL/MariaDB, no JSON_TABLE)
+    q<{ services: string[] }>(`SELECT services FROM leads l ${where}`, params).then((rows) => {
+      const t = new Map<string, number>();
+      for (const r of rows) for (const s of r.services) t.set(s, (t.get(s) ?? 0) + 1);
+      return [...t].map(([k, n]) => ({ k, n })).sort((a, b) => b.n - a.n);
+    }),
+    q<{ k: string; n: number }>(`SELECT industry k, count(*) n FROM leads l ${where ? where + " AND" : "WHERE"} industry IS NOT NULL GROUP BY 1 ORDER BY 2 DESC`, params),
+    q<{ k: string; n: number }>(`SELECT DATE_FORMAT(created_at,'%Y-%m') k, count(*) n FROM leads l ${where ? where + " AND" : "WHERE"} created_at > now() - INTERVAL 12 MONTH GROUP BY 1 ORDER BY 1`, params),
   ]);
   const c = Object.fromEntries(byStatus.map((r) => [r.k, r.n])) as Record<string, number>;
   const total = byStatus.reduce((a, r) => a + r.n, 0);

@@ -9,13 +9,13 @@ export function leadWhere(u: User, f: LeadQuery) {
   if (u.role === "employee") add("l.assigned_to = ?", u.id);
   else if (f.assigned === "none") w.push("l.assigned_to IS NULL");
   else if (f.assigned) add("l.assigned_to = ?", Number(f.assigned) || 0);
-  if (f.q) { p.push(`%${f.q}%`); const i = p.length; w.push(`(l.name ILIKE $${i} OR l.company ILIKE $${i} OR l.phone ILIKE $${i} OR l.email ILIKE $${i})`); }
+  if (f.q) { p.push(`%${f.q}%`); const i = p.length; w.push(`(l.name LIKE $${i} OR l.company LIKE $${i} OR l.phone LIKE $${i} OR l.email LIKE $${i})`); }
   if (f.status) add("l.status = ?", f.status);
-  if (f.service) add("? = ANY(l.services)", f.service);
+  if (f.service) add("JSON_CONTAINS(l.services, JSON_QUOTE(?))", f.service);
   if (f.industry) add("l.industry = ?", f.industry);
   if (f.source) add("l.source = ?", f.source);
-  if (f.from) add("l.created_at >= ?::date", f.from);
-  if (f.to) add("l.created_at < (?::date + 1)", f.to);
+  if (f.from) add("l.created_at >= DATE(?)", f.from);
+  if (f.to) add("l.created_at < DATE_ADD(DATE(?), INTERVAL 1 DAY)", f.to);
   return { where: w.length ? "WHERE " + w.join(" AND ") : "", params: p };
 }
 

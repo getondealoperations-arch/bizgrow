@@ -32,7 +32,7 @@ const ev = (lead: number, user: number, kind: string, body: string) =>
 export async function updateLead(fd: FormData) {
   const id = Number(fd.get("id"));
   const u = await leadAccess(id);
-  const cur = await one<{ status: string; assigned_to: number | null; follow_up_at: string | null }>("SELECT status, assigned_to, to_char(follow_up_at,'YYYY-MM-DD') follow_up_at FROM leads WHERE id=$1", [id]);
+  const cur = await one<{ status: string; assigned_to: number | null; follow_up_at: string | null }>("SELECT status, assigned_to, DATE_FORMAT(follow_up_at,'%Y-%m-%d') follow_up_at FROM leads WHERE id=$1", [id]);
   const status = String(fd.get("status"));
   if (statuses.some((s) => s[0] === status) && status !== cur!.status) {
     await q("UPDATE leads SET status=$2 WHERE id=$1", [id, status]);
@@ -89,11 +89,11 @@ export async function saveCms(fd: FormData) {
   const pub = fd.get("published") === "on";
   // trust rule: testimonials / case studies cannot go live without a note on how they were verified
   if (pub && ["testimonial", "case_study"].includes(kind) && !data.verified_by?.trim()) redirect(`/admin/cms/${kind}?err=Add+how+this+was+verified+before+publishing`);
-  const at = String(fd.get("publish_at") || "") || null;
+  const at = String(fd.get("publish_at") || "").replace("T", " ") || null;
   const args = [kind, kind === "seo" ? String(fd.get("slug")) : slug, title, String(fd.get("body") ?? ""), JSON.stringify(data), pub, at];
   try {
     if (id) await q("UPDATE cms_items SET kind=$1, slug=$2, title=$3, body=$4, data=$5, published=$6, publish_at=$7, updated_at=now() WHERE id=$8 AND kind=$1", [...args, id]);
-    else await q("INSERT INTO cms_items (kind,slug,title,body,data,published,publish_at) VALUES ($1,$2,$3,$4,$5,$6,$7) ON CONFLICT (kind,slug) DO UPDATE SET title=EXCLUDED.title, body=EXCLUDED.body, data=EXCLUDED.data, published=EXCLUDED.published, publish_at=EXCLUDED.publish_at, updated_at=now()", args);
+    else await q("INSERT INTO cms_items (kind,slug,title,body,data,published,publish_at) VALUES ($1,$2,$3,$4,$5,$6,$7) ON DUPLICATE KEY UPDATE title=VALUES(title), body=VALUES(body), data=VALUES(data), published=VALUES(published), publish_at=VALUES(publish_at), updated_at=now()", args);
   } catch { redirect(`/admin/cms/${kind}?err=Could+not+save`); }
   revalidatePath("/", "layout");
   redirect(`/admin/cms/${kind}`);

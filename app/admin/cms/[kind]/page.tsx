@@ -24,7 +24,7 @@ export default async function CmsKind({ params, searchParams }: PageProps<"/admi
   const sp = await searchParams;
   const meta = kinds.find((k) => k[0] === kind);
   if (!meta) notFound();
-  const items = await q<Item>("SELECT *, to_char(publish_at,'YYYY-MM-DD\"T\"HH24:MI') AS pa FROM cms_items WHERE kind=$1 ORDER BY created_at DESC", [kind]) as (Item & { pa: string | null })[];
+  const items = await q<Item>("SELECT *, DATE_FORMAT(publish_at,'%Y-%m-%dT%H:%i') AS pa FROM cms_items WHERE kind=$1 ORDER BY created_at DESC", [kind]) as (Item & { pa: string | null })[];
   const editId = Number(sp.edit) || 0;
   const cur = editId ? items.find((i) => i.id === editId) : undefined;
   void one;
