@@ -1,26 +1,104 @@
 @import "tailwindcss";
 
+/* Design tokens — taken from the supplied logo files (logo/*.png). Change colours here only.
+   Contrast notes: navy text on --brand = 6.3:1; --brand-text on white = 5.2:1 (use it for orange TEXT on light
+   backgrounds, plain --brand fails AA there); --amber on --navy = 10.2:1. Never put white text on orange. */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --navy: #111827;        /* logo dark / "BIZ" */
+  --ink: #111827;
+  --muted: #526071;       /* logo "SOLUTIONS" slate family */
+  --line: #e5e7eb;
+  --soft: #f6f7f9;
+  --bg: #ffffff;
+  --brand: #f07818;       /* logo orange ("GROW") */
+  --brand-light: #fbb246; /* top-left of the logo mark gradient */
+  --brand-deep: #e06a0c;
+  --brand-text: #b84a06;  /* accessible orange for text/links on white */
+  --amber: #fcb84c;       /* logo orange on dark backgrounds */
+  --tint: #fff1e3;
+  --tint-line: #f8c99a;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-navy: var(--navy);
+  --color-brand: var(--brand);
+  --color-brand-text: var(--brand-text);
+  --color-amber: var(--amber);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-soft: var(--soft);
+  --font-sans: var(--font-geist-sans), system-ui, sans-serif;
+  --font-display: var(--font-display), Georgia, serif;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html { scroll-behavior: smooth; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font-geist-sans), system-ui, sans-serif; }
+h1, h2, h3 { font-family: var(--font-display), Georgia, serif; color: var(--navy); letter-spacing: -0.01em; }
+:focus-visible { outline: 3px solid var(--brand-text); outline-offset: 2px; }
+
+.container-x { width: 100%; max-width: 80rem; margin-inline: auto; padding-inline: 1.5rem; }
+@media (min-width: 1536px) { .container-x { max-width: 90rem; } }
+.section { padding-block: clamp(2.75rem, 8vw, 6rem); }
+.eyebrow { color: var(--brand-text); font-weight: 600; font-size: .8rem; letter-spacing: .12em; text-transform: uppercase; }
+
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: .5rem; border-radius: .6rem; padding: .7rem 1.2rem;
+  font-weight: 600; font-size: .95rem; transition: transform .15s, background .15s, box-shadow .15s; cursor: pointer; border: 1px solid transparent; }
+.btn:hover { transform: translateY(-1px); }
+.btn-primary { background: linear-gradient(135deg, var(--brand-light), var(--brand)); color: var(--navy); box-shadow: 0 6px 18px -8px var(--brand); }
+.btn-primary:hover { background: linear-gradient(135deg, var(--brand), var(--brand-deep)); }
+.btn-dark { background: var(--navy); color: #fff; }
+.btn-dark:hover { background: #1f2937; }
+.btn-ghost { border-color: var(--line); color: var(--navy); background: #fff; }
+.btn-ghost:hover { border-color: var(--brand); color: var(--brand-text); }
+.btn-light { background: #fff; color: var(--navy); }
+.btn-outline-light { border-color: rgba(255,255,255,.4); color: #fff; }
+
+.card { background: #fff; border: 1px solid var(--line); border-radius: 1rem; padding: 1.5rem; transition: transform .2s, box-shadow .2s, border-color .2s; }
+a.card:hover, .card.hover:hover { transform: translateY(-3px); box-shadow: 0 16px 32px -20px rgba(17,24,39,.35); border-color: var(--tint-line); }
+.icon-chip { display: inline-flex; width: 2.75rem; height: 2.75rem; align-items: center; justify-content: center; border-radius: .75rem; background: var(--tint); color: var(--brand-text); }
+
+.field label { display: block; font-size: .85rem; font-weight: 600; margin-bottom: .3rem; color: var(--navy); }
+.field input, .field select, .field textarea { width: 100%; border: 1px solid #cfd7e3; border-radius: .55rem; padding: .6rem .75rem; background: #fff; font-size: .95rem; }
+.field input:focus, .field select:focus, .field textarea:focus { border-color: var(--brand); outline: 2px solid var(--tint-line); }
+.field .err { color: #b42318; font-size: .78rem; margin-top: .2rem; }
+
+/* hero growth visual */
+@keyframes rise { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+@keyframes draw { to { stroke-dashoffset: 0; } }
+@keyframes floaty { 50% { transform: translateY(-8px); } }
+.bar { transform-origin: bottom; animation: rise 1s cubic-bezier(.2,.8,.2,1) both; }
+.trend { stroke-dasharray: 600; stroke-dashoffset: 600; animation: draw 1.8s .6s ease-out forwards; }
+.floaty { animation: floaty 5s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { .bar, .trend, .floaty { animation: none; stroke-dashoffset: 0; } html { scroll-behavior: auto; } }
+
+/* admin */
+.tbl { width: 100%; font-size: .88rem; border-collapse: collapse; }
+.tbl th { text-align: left; color: var(--muted); font-weight: 600; padding: .55rem .7rem; border-bottom: 1px solid var(--line); white-space: nowrap; }
+.tbl td { padding: .6rem .7rem; border-bottom: 1px solid var(--line); vertical-align: top; }
+.badge { display: inline-block; border-radius: 999px; padding: .1rem .6rem; font-size: .75rem; font-weight: 600; background: var(--tint); color: var(--brand-text); }
+
+.field input[type="checkbox"], input[type="checkbox"] { width: 1rem; height: 1rem; padding: 0; accent-color: var(--brand); flex-shrink: 0; }
+.field label.chip, .chip { display: inline-flex; align-items: center; gap: .45rem; border: 1px solid #cfd7e3; border-radius: 999px; padding: .35rem .8rem; font-size: .85rem; font-weight: 500; cursor: pointer; background: #fff; margin: 0; color: var(--ink); transition: background .15s, border-color .15s; }
+.chip:hover { border-color: var(--brand); }
+.field label.chip:has(input:checked), .chip:has(input:checked) { background: var(--tint); border-color: var(--brand); color: var(--brand-text); }
+.chip:has(input:focus-visible) { outline: 3px solid var(--brand-text); outline-offset: 2px; }
+
+/* ---- mobile ---- */
+@media (max-width: 639px) {
+  .btn { min-height: 2.9rem; }
+  /* 16px inputs: iOS Safari zooms the page on focus below this */
+  .field input, .field select, .field textarea { font-size: 1rem; padding: .75rem .85rem; }
+  .field label.chip, .chip { min-height: 2.75rem; padding: .5rem 1rem; font-size: .92rem; }
+  .field input[type="checkbox"], input[type="checkbox"] { width: 1.2rem; height: 1.2rem; }
+  .card { padding: 1.15rem; }
+  h1 { word-break: break-word; }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
-}
+/* hide the floating WhatsApp button while a form field is focused (keyboard is open / it would cover the field) */
+body:has(input:focus, textarea:focus, select:focus) .wa-float { display: none; }
+
+/* eyebrow labels on dark sections use the logo's dark-background amber */
+.bg-navy .eyebrow { color: var(--amber); }
+/* orange call-to-action band (gradient taken from the logo mark) */
+.cta-band { background: linear-gradient(120deg, var(--brand-light), var(--brand)); }
